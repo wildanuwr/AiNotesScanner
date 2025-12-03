@@ -1,0 +1,88 @@
+import React, { useState } from "react";
+import { 
+  View, 
+  Text, 
+  ActivityIndicator, 
+  Alert, 
+  StyleSheet 
+} from "react-native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import CameraView from "../components/CameraView";
+import { extractTextFromImage } from "../services/ocr";
+import { summarizeText } from "../services/summarizer";
+
+type RootStackParamList = {
+  Home: undefined;
+  Scan: undefined;
+  Result: { text: string };
+};
+
+type Props = NativeStackScreenProps<RootStackParamList, "Scan">;
+
+export default function ScanScreen({ navigation }: Props) {
+  const [loading, setLoading] = useState(false);
+
+  const handleCapture = async (photoPath: string) => {
+    setLoading(true);
+    try {
+      const extractedText = await extractTextFromImage(photoPath);
+
+      if (!extractedText || extractedText.trim().length === 0) {
+        return Alert.alert("OCR Gagal", "Tidak ada teks yang terbaca dari foto.");
+      }
+
+      const summary = await summarizeText(extractedText);
+
+      navigation.navigate("Result", { text: summary });
+    } catch (error) {
+      console.warn("ScanScreen handleCapture error:", error);
+      Alert.alert("Error", "Terjadi kesalahan saat memproses foto.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      {/* CAMERA */}
+      <CameraView onCapture={handleCapture} />
+
+      {/* LOADING OVERLAY */}
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#ffffff" />
+          <Text style={styles.loadingText}>
+            Gambar sedang diproses...
+            {"\n"}Silakan tunggu sebentar.
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#000" },
+
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    zIndex: 999,
+  },
+
+  loadingText: {
+    marginTop: 15,
+    fontSize: 16,
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "600",
+    lineHeight: 22,
+  },
+});
