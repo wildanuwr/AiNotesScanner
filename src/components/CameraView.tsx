@@ -40,6 +40,7 @@ export default function CameraView({ onCapture }: CameraViewProps) {
 
     try {
       const photo = await camera.current.takePhoto({});
+      setFlashOn(false);
       const destPath = `${RNFS.DocumentDirectoryPath}/scan_${Date.now()}.jpg`;
 
       await RNFS.copyFile(photo.path, destPath);

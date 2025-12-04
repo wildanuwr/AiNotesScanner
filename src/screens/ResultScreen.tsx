@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, ActivityIndicator } from "react-native";
+import { 
+  View, 
+  Text, 
+  ScrollView, 
+  ActivityIndicator, 
+  TouchableOpacity,
+  ToastAndroid 
+} from "react-native";
+import Clipboard from "@react-native-clipboard/clipboard";
 import { summarizeText } from "../services/summarizer";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
@@ -15,6 +23,11 @@ export default function ResultScreen({ route }: Props) {
   const { text } = route.params;
   const [summary, setSummary] = useState("");
   const [loading, setLoading] = useState(true);
+
+  const copy = (t: string) => {
+    Clipboard.setString(t);
+    ToastAndroid.show("Teks berhasil disalin!", ToastAndroid.SHORT);
+  };
 
   useEffect(() => {
     const run = async () => {
@@ -59,9 +72,15 @@ export default function ResultScreen({ route }: Props) {
           elevation: 3,
         }}
       >
-        <Text style={{ fontSize: 18, fontWeight: "600", marginBottom: 8 }}>
-          Teks Asli
-        </Text>
+        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+          <Text style={{ fontSize: 18, fontWeight: "600", marginBottom: 8 }}>
+            Teks Asli
+          </Text>
+
+          <TouchableOpacity onPress={() => copy(text)}>
+            <Text style={{ color: "#007AFF", fontWeight: "600" }}>Salin</Text>
+          </TouchableOpacity>
+        </View>
 
         <Text style={{ fontSize: 15, lineHeight: 22, color: "#333" }}>
           {text}
@@ -90,7 +109,7 @@ export default function ResultScreen({ route }: Props) {
           shadowOpacity: 0.05,
           shadowRadius: 8,
           elevation: 3,
-          marginBottom: 20,
+          marginBottom: 40,
         }}
       >
         {loading ? (
@@ -107,9 +126,17 @@ export default function ResultScreen({ route }: Props) {
             </Text>
           </View>
         ) : (
-          <Text style={{ fontSize: 15, lineHeight: 22, color: "#333" }}>
-            {summary}
-          </Text>
+          <>
+            <View style={{ flexDirection: "row", justifyContent: "flex-end", marginBottom: 8 }}>
+              <TouchableOpacity onPress={() => copy(summary)}>
+                <Text style={{ color: "#007AFF", fontWeight: "600" }}>Salin Ringkasan</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 15, lineHeight: 22, color: "#333" }}>
+              {summary}
+            </Text>
+          </>
         )}
       </View>
     </ScrollView>
