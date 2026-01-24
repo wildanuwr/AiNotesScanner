@@ -1,23 +1,22 @@
 import TextRecognition from '@react-native-ml-kit/text-recognition';
-import { CameraRoll } from '@react-native-camera-roll/camera-roll';
 
 /**
- * Ambil teks dari foto
- * @param internalPath path internal dari CameraView (DocumentDirectoryPath)
+ * Ekstraksi teks dari image lokal
+ * @param internalPath path dari CameraView
  */
-export const extractTextFromImage = async (internalPath: string): Promise<string> => {
+export const extractTextFromImage = async (
+  internalPath: string
+): Promise<string> => {
   try {
-    // 1️⃣ Simpan ke gallery/public storage agar ML Kit bisa akses
-    // tambahkan "file://" prefix
-    const savedUri = await CameraRoll.save("file://" + internalPath, { type: 'photo', album: 'NotesScanner' });
+    const imageUri = internalPath.startsWith('file://')
+      ? internalPath
+      : `file://${internalPath}`;
 
-    // 2️⃣ Jalankan OCR dari URI publik
-    const result = await TextRecognition.recognize(savedUri);
+    const result = await TextRecognition.recognize(imageUri);
 
-    // 3️⃣ Kembalikan teks yang terbaca
-    return result.text || '';
-  } catch (e) {
-    console.warn("OCR failed:", e);
+    return result.text?.trim() ?? '';
+  } catch (error) {
+    console.warn('[OCR ERROR]', error);
     return '';
   }
 };

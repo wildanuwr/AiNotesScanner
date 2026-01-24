@@ -1,8 +1,6 @@
 import React, { useRef, useState } from "react";
 import { View, TouchableOpacity, Text, Alert } from "react-native";
-import { Camera, useCameraDevices, CameraDevice } from "react-native-vision-camera";
-import RNFS from "react-native-fs";
-import { CameraRoll } from "@react-native-camera-roll/camera-roll";
+import { Camera, useCameraDevices } from "react-native-vision-camera";
 import { requestPermissions } from "../services/permissions";
 
 type CameraViewProps = {
@@ -10,51 +8,37 @@ type CameraViewProps = {
 };
 
 export default function CameraView({ onCapture }: CameraViewProps) {
-  const devices: CameraDevice[] = useCameraDevices();
-  const [flashOn, setFlashOn] = useState(false);
-  const device = devices.find((d) => d.position === "back");
+  const devices = useCameraDevices();
+  const device = devices.find(d => d.position === "back");
   const camera = useRef<Camera>(null);
+  const [flashOn, setFlashOn] = useState(false);
 
-  if (!device)
+  if (!device) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "#000",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Text style={{ color: "white", fontSize: 16 }}>Loading Camera...</Text>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#000" }}>
+        <Text style={{ color: "#fff" }}>Loading Camera...</Text>
       </View>
     );
+  }
 
-  const takePhoto = async () => {
-    if (!camera.current) return;
+const takePhoto = async () => {
+  if (!camera.current) return;
 
-    const granted = await requestPermissions();
-    if (!granted) {
-      Alert.alert("Permission Ditolak", "Aplikasi membutuhkan akses kamera.");
-      return;
-    }
+  try {
+    const photo = await camera.current.takePhoto({
+      flash: flashOn ? 'on' : 'off',
+    });
 
-    try {
-      const photo = await camera.current.takePhoto({});
-      setFlashOn(false);
-      const destPath = `${RNFS.DocumentDirectoryPath}/scan_${Date.now()}.jpg`;
+    // Path internal cache (TIDAK ke galeri)
+    const filePath = `file://${photo.path}`;
 
-      await RNFS.copyFile(photo.path, destPath);
-      await CameraRoll.save("file://" + destPath, {
-        type: "photo",
-        album: "NotesScanner",
-      });
-
-      onCapture(destPath);
-    } catch (e) {
-      console.log("Take Photo Error:", e);
-      Alert.alert("Gagal mengambil foto");
-    }
-  };
+    // Langsung kirim ke OCR
+    onCapture(filePath);
+  } catch (e) {
+    console.log("Take Photo Error:", e);
+    Alert.alert("Gagal mengambil foto");
+  }
+};
 
   return (
     <View style={{ flex: 1, backgroundColor: "#000" }}>
@@ -68,7 +52,7 @@ export default function CameraView({ onCapture }: CameraViewProps) {
         torch={flashOn ? "on" : "off"}
       />
 
-      {/* SCAN FRAME OVERLAY */}
+      {/* FRAME SCAN */}
       <View
         style={{
           position: "absolute",
@@ -81,26 +65,6 @@ export default function CameraView({ onCapture }: CameraViewProps) {
           borderRadius: 18,
         }}
       />
-
-      {/* DARK GRADIENT TOP */}
-      <View
-        style={{
-          position: "absolute",
-          top: 0,
-          height: 160,
-          width: "100%",
-          backgroundColor: "rgba(0,0,0,0.45)",
-          justifyContent: "flex-end",
-          padding: 20,
-        }}
-      >
-        <Text style={{ color: "#fff", fontSize: 20, fontWeight: "600" }}>
-          Arahkan kamera ke teks
-        </Text>
-        <Text style={{ color: "#ddd", fontSize: 14, marginTop: 4 }}>
-          Sistem akan men-scan teks secara otomatis
-        </Text>
-      </View>
 
       {/* SHUTTER BUTTON */}
       <View
@@ -121,24 +85,20 @@ export default function CameraView({ onCapture }: CameraViewProps) {
             justifyContent: "center",
             alignItems: "center",
             elevation: 12,
-            shadowColor: "#000",
-            shadowOpacity: 0.3,
-            shadowRadius: 8,
-            shadowOffset: { width: 0, height: 4 },
           }}
         >
           <View
             style={{
               width: 68,
               height: 68,
-                // backgroundColor: "#fafafa",
               borderRadius: 100,
+              backgroundColor: "#eee",
             }}
           />
         </TouchableOpacity>
       </View>
 
-      {/* FLASH & SETTINGS BUTTON */}
+      {/* FLASH BUTTON */}
       <TouchableOpacity
         onPress={() => setFlashOn(!flashOn)}
         style={{

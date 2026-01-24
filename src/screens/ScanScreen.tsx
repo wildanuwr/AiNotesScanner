@@ -7,8 +7,9 @@ import {
   StyleSheet 
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import RNFS from "react-native-fs";
 import CameraView from "../components/CameraView";
-import { extractTextFromImage } from "../services/ocr";
+import { extractTextFromImage } from "../services/ocr.backup";
 import { summarizeText } from "../services/summarizer";
 
 type RootStackParamList = {
@@ -38,6 +39,17 @@ export default function ScanScreen({ navigation }: Props) {
       console.warn("ScanScreen handleCapture error:", error);
       Alert.alert("Error", "Terjadi kesalahan saat memproses foto.");
     } finally {
+      // ✅ HAPUS FILE SETELAH OCR (AMAN)
+      try {
+        const path = photoPath.replace("file://", "");
+        const exists = await RNFS.exists(path);
+        if (exists) {
+          await RNFS.unlink(path);
+          console.log("Temp image deleted:", path);
+        }
+      } catch (err) {
+        console.warn("Failed to delete temp file:", err);
+      }
       setLoading(false);
     }
   };
