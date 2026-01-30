@@ -166,6 +166,22 @@ export default function HomeScreen({ navigation }: Props) {
             </Text>
           </TouchableOpacity>
 
+          <TouchableOpacity 
+            style={{ 
+              backgroundColor: "white",
+              paddingVertical: 18,
+              borderRadius: 20,
+              alignItems: "center",
+              elevation: 10,
+              marginTop: 15,
+             }}
+           onPress={() => navigation.navigate('History')}>
+            <Text style={{ color: "#2575fc", fontSize: 18, fontWeight: "700" }}>
+              Lihat Riwayat
+            </Text>
+          </TouchableOpacity>
+
+
         </Animated.View>
 
       </Animated.View>

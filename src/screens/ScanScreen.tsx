@@ -18,6 +18,7 @@ import RNFS from "react-native-fs";
 import CameraView from "../components/CameraView";
 import { extractTextFromImage } from "../services/ocr.backup";
 import { summarizeText } from "../services/summarizer";
+import { insertNote } from "../database/noteRepository";
 
 
 type RootStackParamList = {
@@ -84,6 +85,10 @@ export default function ScanScreen({ navigation }: Props) {
 
       // 🔹 Jika online → lanjut summarize
       const summary = await summarizeText(extractedText);
+
+      // 🔸 Simpan hasil OCR ke database
+      insertNote(summary);
+
       navigation.navigate("Result", { text: summary });
 
     } catch (error) {
