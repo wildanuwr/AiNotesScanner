@@ -6,11 +6,17 @@ import {
   Alert, 
   StyleSheet 
 } from "react-native";
+import { useEffect } from "react";
+import {
+  registerNetworkListener,
+  unregisterNetworkListener,
+} from "../services/networkListener";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import RNFS from "react-native-fs";
 import CameraView from "../components/CameraView";
 import { extractTextFromImage } from "../services/ocr.backup";
 import { summarizeText } from "../services/summarizer";
+
 
 type RootStackParamList = {
   Home: undefined;
@@ -23,6 +29,25 @@ type Props = NativeStackScreenProps<RootStackParamList, "Scan">;
 export default function ScanScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
 
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    registerNetworkListener((connected) => {
+      setIsOnline(connected);
+
+      if (!connected) {
+        Alert.alert(
+          "Koneksi Terputus",
+          "Tidak ada koneksi internet. Fitur ringkasan online akan dinonaktifkan."
+        );
+      }
+    });
+
+    return () => {
+      unregisterNetworkListener();
+    };
+  }, []);
+
   const handleCapture = async (photoPath: string) => {
     setLoading(true);
     try {
@@ -32,9 +57,16 @@ export default function ScanScreen({ navigation }: Props) {
         return Alert.alert("OCR Gagal", "Tidak ada teks yang terbaca dari foto.");
       }
 
-      const summary = await summarizeText(extractedText);
+      // 🔹 Jika offline → langsung tampilkan hasil OCR
+      if (!isOnline) {
+        navigation.navigate("Result", { text: extractedText });
+        return;
+      }
 
+      // 🔹 Jika online → lanjut summarize
+      const summary = await summarizeText(extractedText);
       navigation.navigate("Result", { text: summary });
+      
     } catch (error) {
       console.warn("ScanScreen handleCapture error:", error);
       Alert.alert("Error", "Terjadi kesalahan saat memproses foto.");
