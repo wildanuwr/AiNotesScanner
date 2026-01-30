@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import {
   Text,
   TouchableOpacity,
+  Button,
   Animated,
   View,
 } from 'react-native';
@@ -164,6 +165,7 @@ export default function HomeScreen({ navigation }: Props) {
               Mulai Scan
             </Text>
           </TouchableOpacity>
+
         </Animated.View>
 
       </Animated.View>

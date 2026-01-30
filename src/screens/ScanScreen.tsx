@@ -1,16 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useLayoutEffect } from "react";
 import { 
   View, 
   Text, 
   ActivityIndicator, 
   Alert, 
-  StyleSheet 
+  StyleSheet,
+  TouchableOpacity 
 } from "react-native";
 import { useEffect } from "react";
 import {
   registerNetworkListener,
   unregisterNetworkListener,
 } from "../services/networkListener";
+import { getAutoSummary } from "../services/settings";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import RNFS from "react-native-fs";
 import CameraView from "../components/CameraView";
@@ -22,6 +24,7 @@ type RootStackParamList = {
   Home: undefined;
   Scan: undefined;
   Result: { text: string };
+  Settings: undefined;
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, "Scan">;
@@ -31,7 +34,23 @@ export default function ScanScreen({ navigation }: Props) {
 
   const [isOnline, setIsOnline] = useState(true);
 
+  const [autoSummary, setAutoSummaryState] = useState(true);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity onPress={() => navigation.navigate("Settings")}>
+          <Text style={{ fontSize: 18 }}>⚙️</Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
+
   useEffect(() => {
+    // Load auto-summary setting
+    getAutoSummary().then(setAutoSummaryState);
+
+    // Register network listener
     registerNetworkListener((connected) => {
       setIsOnline(connected);
 
@@ -57,8 +76,8 @@ export default function ScanScreen({ navigation }: Props) {
         return Alert.alert("OCR Gagal", "Tidak ada teks yang terbaca dari foto.");
       }
 
-      // 🔹 Jika offline → langsung tampilkan hasil OCR
-      if (!isOnline) {
+      // 🔸 Jika auto-summary MATI atau offline → langsung ke Result
+      if (!autoSummary || !isOnline) {
         navigation.navigate("Result", { text: extractedText });
         return;
       }
@@ -66,7 +85,7 @@ export default function ScanScreen({ navigation }: Props) {
       // 🔹 Jika online → lanjut summarize
       const summary = await summarizeText(extractedText);
       navigation.navigate("Result", { text: summary });
-      
+
     } catch (error) {
       console.warn("ScanScreen handleCapture error:", error);
       Alert.alert("Error", "Terjadi kesalahan saat memproses foto.");
